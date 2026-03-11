@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Swap Box</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
+<style>
+    :root {
+    --bg:       #111827;
+    --surface:  #1a2333;
+    --surface2: #1f2d42;
+    --border:   #2a3f5f;
+    --accent:   #4a9eff;
+    --warn:     #e07070;
+    --success:  #5dbf8a;
+    --text:     #d4dff0;
+    --muted:    #6a86a8;
+    --code-bg:  #0e1724;
+    --code-src: #0e1a14;
+    --code-tpl: #100e1a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    gap: 14px;
+  }
+
+  /* ── Header ── */
+  header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .title { font-size: 15px; font-weight: 700; }
+  .title span { color: var(--accent); }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  #statusText.online  { color: var(--success); }
+  #statusText.offline { color: var(--warn); }
+
+  /* ── Top config bar ── */
+  .config-bar {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+  }
+
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field.grow { flex: 1; min-width: 120px; }
+
+  label { font-size: 11px; color: var(--muted); }
+
+  input, select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 7px 10px;
+    border-radius: 2px;
+    outline: none;
+    width: 100%;
+  }
+
+  input:focus, select:focus { border-color: var(--accent); }
+  select option { background: var(--surface2); }
+
+  /* ── Buttons ── */
+  button {
+    font-family: 'JetBrains Mono', monospace;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: background 0.12s, border-color 0.12s, color 0.12s;
+  }
+
+  .btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 12px;
+    padding: 7px 12px;
+  }
+
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .btn-run {
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    color: #0e1724;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 10px 28px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .btn-run:hover { background: #6ab4ff; }
+  .btn-run:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── Device row ── */
+  .device-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+  }
+
+  .device-row .field { flex: 1; min-width: 160px; }
+
+  /* ── Three panes ── */
+  .panes {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    flex: 1;
+    min-height: 0;
+  }
+
+  @media (max-width: 960px) {
+    .panes { grid-template-columns: 1fr; }
+  }
+
+  .pane {
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 420px;
+  }
+
+  .pane-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+    font-size: 11px;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+
+  .pane-bar b { color: var(--text); font-weight: 500; }
+  .pane-actions { display: flex; gap: 5px; }
+
+  /* pane color accents on left border */
+  .pane.src  { border-left: 2px solid #3a5f8a; }
+  .pane.tpl  { border-left: 2px solid #3a5f8a; }
+  .pane.out  { border-left: 2px solid #2a7a52; }
+
+  /* ── Drop zone ── */
+  .dropzone {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 12px;
+    padding: 20px;
+    border: 2px dashed transparent;
+    transition: border-color 0.12s, background 0.12s;
+    background: var(--code-bg);
+  }
+
+  .dropzone:hover, .dropzone.drag-over {
+    border-color: var(--border);
+    background: rgba(74,158,255,0.04);
+  }
+
+  .dz-sub { font-size: 11px; color: var(--border); }
+
+  /* ── File list ── */
+  .file-list {
+    padding: 5px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 80px;
+    overflow-y: auto;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+
+  .file-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .file-item:hover { background: var(--surface2); color: var(--text); }
+  .file-item.active { color: var(--accent); }
+  .fname { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fsz { color: var(--border); font-size: 10px; }
+  .frm { color: var(--border); }
+  .frm:hover { color: var(--warn); }
+
+  /* ── Code areas ── */
+  textarea {
+    flex: 1;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.7;
+    padding: 12px;
+    border: none;
+    resize: none;
+    outline: none;
+    width: 100%;
+    min-height: 0;
+  }
+
+  textarea.src-area {
+    background: var(--code-src);
+    color: #90b8d8;
+  }
+
+  textarea.tpl-area {
+    background: var(--code-tpl);
+    color: #b8a8e0;
+  }
+
+  pre.out-area {
+    flex: 1;
+    background: var(--code-bg);
+    color: #7ec8a0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.7;
+    padding: 12px;
+    overflow: auto;
+    white-space: pre;
+    margin: 0;
+    min-height: 0;
+  }
+
+  .out-empty {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--border);
+    font-size: 12px;
+    background: var(--code-bg);
+  }
+
+  /* ── Hint strip under template ── */
+  .tpl-hint {
+    padding: 6px 10px;
+    border-top: 1px solid var(--border);
+    font-size: 10px;
+    color: var(--muted);
+    line-height: 1.6;
+    background: var(--surface2);
+    flex-shrink: 0;
+  }
+
+  /* ── Progress ── */
+  .progress-wrap { display: none; flex-direction: column; gap: 5px; flex-shrink: 0; }
+  .progress-wrap.visible { display: flex; }
+  .progress-track { height: 2px; background: var(--border); border-radius: 1px; overflow: hidden; }
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    width: 30%;
+    animation: slide 1.1s infinite ease-in-out;
+  }
+  @keyframes slide { 0% { transform: translateX(-200%); } 100% { transform: translateX(450%); } }
+  .progress-label { font-size: 11px; color: var(--muted); }
+
+  /* ── Batch queue ── */
+  .queue-wrap {
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    display: none;
+    flex-shrink: 0;
+  }
+
+  .queue-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .queue-list {
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    max-height: 130px;
+    overflow-y: auto;
+  }
+
+  .q-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .q-item.done { color: var(--success); }
+  .q-item.error { color: var(--warn); }
+  .q-item.processing { color: var(--accent); }
+  .q-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .q-dl { color: var(--accent); cursor: pointer; text-decoration: underline; font-size: 10px; }
+
+  /* ── Bottom action row ── */
+  .action-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed;
+    bottom: 18px;
+    right: 18px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 9px 14px;
+    font-size: 12px;
+    color: var(--muted);
+    transform: translateY(60px);
+    opacity: 0;
+    transition: all 0.22s ease;
+    pointer-events: none;
+    z-index: 100;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { border-color: var(--success); color: var(--success); }
+  .toast.error   { border-color: var(--warn);    color: var(--warn); }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  input[type="file"] { display: none; }
+
+  footer { text-align: center; padding: 16px; font-family: var(--mono); font-size: 0.72rem; color: var(--text-dim); letter-spacing: 0.08em; border-top: 1px solid var(--border); margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="title">Swap<span>Box</span></div>
+  <div class="header-right">
+    <span id="statusText">● Checking...</span>
+  </div>
+</header>
+
+<!-- Ollama + model -->
+<div class="config-bar">
+  <div class="field grow">
+    <label>Ollama host</label>
+    <input type="text" id="ollamaHost" value="http://localhost" placeholder="http://10.x.x.x"/>
+  </div>
+  <div class="field" style="width:90px">
+    <label>Port</label>
+    <input type="text" id="ollamaPort" value="11434"/>
+  </div>
+  <div class="field grow">
+    <label>Model</label>
+    <select id="modelSelect"><option value="">Loading...</option></select>
+  </div>
+  <div class="field" style="align-self:flex-end">
+    <button class="btn" onclick="testConnection()">Test</button>
+  </div>
+</div>
+
+<!-- Device context (helps the model understand naming conventions) -->
+<div class="device-row">
+  <div class="field">
+    <label>Source device type</label>
+    <select id="sourceDevice">
+      <option value="cisco_2960">Cisco Catalyst 2960</option>
+      <option value="cisco_2960x">Cisco Catalyst 2960X</option>
+      <option value="cisco_3750">Cisco Catalyst 3750</option>
+      <option value="cisco_4500">Cisco Catalyst 4500</option>
+      <option value="cisco_ios_generic">Cisco IOS (generic)</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>Target device type</label>
+    <select id="targetDevice">
+      <option value="cisco_9300l">Cisco Catalyst 9300L</option>
+      <option value="cisco_9300">Cisco Catalyst 9300</option>
+      <option value="cisco_9200">Cisco Catalyst 9200</option>
+      <option value="cisco_iosxe">Cisco IOS-XE (generic)</option>
+    </select>
+  </div>
+</div>
+
+<!-- Three panes -->
+<div class="panes">
+
+  <!-- Pane 1: show run source -->
+  <div class="pane src">
+    <div class="pane-bar">
+      <span><b>Show run</b></span>
+      <div class="pane-actions">
+        <button class="btn" onclick="document.getElementById('srcFileInput').click()">+ File</button>
+        <button class="btn" onclick="toggleSrcManual()">Paste</button>
+        <button class="btn" onclick="clearSrc()">Clear</button>
+      </div>
+    </div>
+    <input type="file" id="srcFileInput" multiple accept=".txt,.cfg,.conf,.log" onchange="handleSrcFiles(event)"/>
+    <div id="srcFileList" class="file-list" style="display:none"></div>
+    <div id="srcDropzone" class="dropzone"
+      ondrop="handleSrcDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event,'srcDropzone')"
+      onclick="document.getElementById('srcFileInput').click()">
+      <span>drop show run file here</span>
+      <span class="dz-sub">click to browse files</span>
+    </div>
+    <textarea id="srcText" class="src-area" placeholder="or paste show running-config output here..." style="display:none"></textarea>
+  </div>
+
+  <!-- Pane 2: target template -->
+  <div class="pane tpl">
+    <div class="pane-bar">
+      <span><b>Targets template</b></span>
+      <div class="pane-actions">
+        <button class="btn" onclick="document.getElementById('tplFileInput').click()">+ File</button>
+        <button class="btn" onclick="document.getElementById('tplText').value=''">Clear</button>
+      </div>
+    </div>
+    <input type="file" id="tplFileInput" accept=".txt,.cfg,.conf" onchange="handleTplFile(event)"/>
+    <div id="tplDropzone" class="dropzone"
+      ondrop="handleTplDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event,'tplDropzone')"
+      onclick="document.getElementById('tplFileInput').click()">
+      <span>drop your base template here</span>
+      <span class="dz-sub">the config skeleton for the target device</span>
+    </div>
+    <textarea id="tplText" class="tpl-area" placeholder="or paste your target device template here...&#10;&#10;Use PlaceHolder, PlaceHolder, etc. for fields that should be filled&#10;from the source show run." style="display:none"></textarea>
+  </div>
+
+  <!-- Pane 3: output -->
+  <div class="pane out">
+    <div class="pane-bar">
+      <span><b>Output</b></span>
+      <div class="pane-actions">
+        <button class="btn" onclick="copyOutput()">Copy</button>
+        <button class="btn" onclick="downloadOutput()">Save</button>
+      </div>
+    </div>
+    <div id="outEmpty" class="out-empty">- fill both panes and click run -</div>
+    <pre id="outContent" class="out-area" style="display:none"></pre>
+  </div>
+
+</div>
+
+<!-- Progress -->
+<div class="progress-wrap" id="progressWrap">
+  <div class="progress-track"><div class="progress-fill"></div></div>
+  <div class="progress-label" id="progressLabel">sending to ollama...</div>
+</div>
+
+<!-- Batch queue -->
+<div class="queue-wrap" id="queuePanel">
+  <div class="queue-header">
+    <span>batch queue</span>
+    <button class="btn" onclick="clearQueue()">clear</button>
+  </div>
+  <div class="queue-list" id="queueList"></div>
+</div>
+
+<!-- Action row -->
+<div class="action-row">
+  <button class="btn-run" id="runBtn" onclick="runMigration()">Run config migration</button>
+  <span style="color:var(--muted);font-size:11px" id="batchHint"></span>
+</div>
+
+<footer>
+    <span>© 2026 Brady Genik · SwapBox v1.0 · bradygenik@thebrady.ca</span>
+</footer>
+
+<div class="toast" id="toast"></div>
+<script>
+  // ── State ─────────────────────────────────────────────────────────────────
+  let srcFiles = [];
+  let activeSrcIdx = null;
+  let showingSrcManual = false;
+  let showingTplManual = false;
+  let batchQueue = [];
+
+  // ── Ollama ────────────────────────────────────────────────────────────────
+  function getBase() {
+    return `${document.getElementById('ollamaHost').value.replace(/\/$/,'')}:${document.getElementById('ollamaPort').value}`;
+  }
+
+  async function testConnection() {
+    const st = document.getElementById('statusText');
+    st.textContent = '● checking...'; st.className = '';
+    try {
+      const res = await fetch(`${getBase()}/api/tags`);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      st.textContent = '● connected'; st.className = 'online';
+      populateModels(data.models || []);
+      toast('ollama connected', 'success');
+    } catch {
+      st.textContent = '● offline'; st.className = 'offline';
+      toast('cannot reach ollama', 'error');
+    }
+  }
+
+  function populateModels(models) {
+    const sel = document.getElementById('modelSelect');
+    sel.innerHTML = models.length
+      ? models.map(m => `<option value="${m.name}">${m.name}</option>`).join('')
+      : '<option value="">no models found</option>';
+    const pref = [...sel.options].find(o => /llama|mistral|codellama|devops/i.test(o.value));
+    if (pref) pref.selected = true;
+  }
+
+  async function callOllama(model, prompt) {
+    const res = await fetch(`${getBase()}/api/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model, prompt, stream: false })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return (await res.json()).response || '';
+  }
+
+  // ── Prompt builder ────────────────────────────────────────────────────────
+  function buildPrompt(showRunText, templateText, srcDevice, tgtDevice) {
+    const dn = {
+      cisco_2960: 'Cisco Catalyst 2960', cisco_2960x: 'Cisco Catalyst 2960X',
+      cisco_3750: 'Cisco Catalyst 3750', cisco_4500: 'Cisco Catalyst 4500',
+      cisco_ios_generic: 'Cisco IOS',    cisco_iosxe: 'Cisco IOS-XE',
+      cisco_9300l: 'Cisco Catalyst 9300L', cisco_9300: 'Cisco Catalyst 9300',
+      cisco_9200: 'Cisco Catalyst 9200',   cisco_9500: 'Cisco Catalyst 9500',
+    };
+
+    return `You are a network engineer. You are migrating a device config from a ${dn[srcDevice]||srcDevice} to a ${dn[tgtDevice]||tgtDevice}.
+
+You have two inputs:
+1. SOURCE — a "show running-config" from the OLD device
+2. TEMPLATE — the base config for the NEW device, which already has all policy and structural config correct
+
+Your ONLY job is to extract the following site-specific fields from SOURCE and insert them into the TEMPLATE.
+Do not change anything else.
+
+--- FIELD 1: hostname ---
+Extract the "hostname <n>" line from SOURCE.
+Replace the "hostname" line in the TEMPLATE with this value.
+
+--- FIELD 2: VLANs ---
+Extract ALL vlan definitions from SOURCE (every "vlan <id>" block and its "name <n>" line).
+Remove the existing vlan definition blocks from the TEMPLATE entirely.
+Insert the SOURCE vlans in their place, using the same formatting style (one "!" between each vlan block).
+
+--- FIELD 3: management SVI + ip default-gateway ---
+Identify the management SVI from SOURCE: the "interface Vlan<X>" block that has an "ip address" configured.
+Step A — SVI: In the TEMPLATE, replace the existing management "interface Vlan<X>" block
+  with the one from SOURCE. Keep the exact Vlan number and IP from SOURCE.
+  The "interface Vlan1 / no ip address / shutdown" block must remain untouched.
+Step B — gateway:
+  If SOURCE has an explicit "ip default-gateway" line, use that value.
+  Otherwise take the SVI IP and replace the last octet with .1 to derive the gateway.
+  Replace the "ip default-gateway" line in the TEMPLATE with this derived value.
+
+--- FIELD 4: banner Host/Site/Location/Model lines ---
+The WARNING box text in the TEMPLATE must remain completely untouched.
+From the SOURCE banner, extract ONLY the site identification lines at the bottom of the banner (after the warning box):
+  Host: <value>
+  Site: <value>
+  Location: <value>   (include only if this line exists in SOURCE — omit if absent)
+  Model: <value>
+Replace only those matching lines at the bottom of the TEMPLATE banner. Do not alter the warning box text.
+
+--- FIELD 5: TACACS server keys ---
+For each "tacacs server" block in SOURCE (ACS3, ACS4, etc.):
+  - If the key is "key 7 <encrypted>", carry it over as-is: "key 7 <encrypted>"
+  - If the key is plaintext "key <value>", carry it over as: "key <value>"
+Find the matching named server blocks in the TEMPLATE and replace only the key lines.
+Do not change the server IP addresses in the TEMPLATE.
+
+--- FIELD 6: RSA crypto ---
+The TEMPLATE already has "crypto key generate rsa 2048" — leave it exactly as written.
+Do NOT copy any crypto pki trustpoint, crypto pki certificate chain, or certificate blob from SOURCE.
+
+--- STRICT RULES ---
+- Do NOT change: interfaces, NTP, SNMP, ACLs, AAA, logging, line configs, spanning-tree, VTP, or any other config
+- Do NOT add or remove any lines outside of the six fields defined above
+- Output ONLY the final IOS configuration — no explanations, no markdown fences, no comments
+- The output must be ready to copy and paste directly into a switch terminal
+
+SOURCE show running-config:
+===
+${showRunText}
+===
+
+TEMPLATE:
+===
+${templateText}
+===`;
+  }
+
+  // ── Source file handling ──────────────────────────────────────────────────
+  function handleSrcFiles(e) { addSrcFiles([...e.target.files]); }
+  function handleSrcDrop(e) {
+    e.preventDefault();
+    document.getElementById('srcDropzone').classList.remove('drag-over');
+    addSrcFiles([...e.dataTransfer.files]);
+  }
+
+  function addSrcFiles(newFiles) {
+    newFiles.forEach(f => { if (!srcFiles.find(x => x.name === f.name)) srcFiles.push(f); });
+    renderSrcFileList();
+    updateBatchHint();
+  }
+
+  function renderSrcFileList() {
+    const list = document.getElementById('srcFileList');
+    const dz   = document.getElementById('srcDropzone');
+    const ta   = document.getElementById('srcText');
+
+    if (!srcFiles.length) {
+      list.style.display = 'none';
+      if (!showingSrcManual) dz.style.display = 'flex';
+      return;
+    }
+    list.style.display = 'flex';
+    list.innerHTML = srcFiles.map((f, i) => `
+      <div class="file-item ${i === activeSrcIdx ? 'active' : ''}" onclick="selectSrc(${i})">
+        <span class="fname">${f.name}</span>
+        <span class="fsz">${(f.size/1024).toFixed(1)}k</span>
+        <span class="frm" onclick="removeSrc(event,${i})">×</span>
+      </div>`).join('');
+    if (activeSrcIdx === null) selectSrc(0);
+  }
+
+  function selectSrc(i) { activeSrcIdx = i; renderSrcFileList(); }
+
+  function removeSrc(e, i) {
+    e.stopPropagation();
+    srcFiles.splice(i, 1);
+    if (activeSrcIdx >= srcFiles.length) activeSrcIdx = srcFiles.length - 1;
+    if (!srcFiles.length) activeSrcIdx = null;
+    renderSrcFileList();
+    updateBatchHint();
+  }
+
+  function clearSrc() {
+    srcFiles = []; activeSrcIdx = null;
+    document.getElementById('srcText').value = '';
+    renderSrcFileList();
+    updateBatchHint();
+  }
+
+  function toggleSrcManual() {
+    showingSrcManual = !showingSrcManual;
+    const ta = document.getElementById('srcText');
+    const dz = document.getElementById('srcDropzone');
+    ta.style.display = showingSrcManual ? 'block' : 'none';
+    dz.style.display = showingSrcManual ? 'none'  : (!srcFiles.length ? 'flex' : 'none');
+  }
+
+  // ── Template file handling ─────────────────────────────────────────────────
+  function handleTplFile(e) { loadTplFile(e.target.files[0]); }
+  function handleTplDrop(e) {
+    e.preventDefault();
+    document.getElementById('tplDropzone').classList.remove('drag-over');
+    if (e.dataTransfer.files[0]) loadTplFile(e.dataTransfer.files[0]);
+  }
+
+  function loadTplFile(f) {
+    const r = new FileReader();
+    r.onload = () => {
+      document.getElementById('tplText').value = r.result;
+      document.getElementById('tplText').style.display = 'block';
+      document.getElementById('tplDropzone').style.display = 'none';
+    };
+    r.readAsText(f);
+  }
+
+  // ── Shared drag handlers ──────────────────────────────────────────────────
+  function handleDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+  function handleDragLeave(e, id) { document.getElementById(id).classList.remove('drag-over'); }
+
+  // ── Read file util ────────────────────────────────────────────────────────
+  function readFile(f) {
+    return new Promise((res, rej) => {
+      const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsText(f);
+    });
+  }
+
+  // ── Migration runner ──────────────────────────────────────────────────────
+  async function runMigration() {
+    const model = document.getElementById('modelSelect').value;
+    if (!model) { toast('select a model first', 'error'); return; }
+
+    const tplText = document.getElementById('tplText').value.trim();
+    if (!tplText) { toast('paste or load a target template first', 'error'); return; }
+
+    const manualSrc = document.getElementById('srcText').value.trim();
+    const src = document.getElementById('sourceDevice').value;
+    const tgt = document.getElementById('targetDevice').value;
+
+    if (showingSrcManual && manualSrc) {
+      await migrateOne('manual_input', manualSrc, tplText, model, src, tgt);
+    } else if (srcFiles.length === 1) {
+      const txt = await readFile(srcFiles[0]);
+      await migrateOne(srcFiles[0].name, txt, tplText, model, src, tgt);
+    } else if (srcFiles.length > 1) {
+      await migrateBatch(tplText, model, src, tgt);
+    } else {
+      toast('paste a show run first', 'error');
+    }
+  }
+
+  async function migrateOne(name, showRunText, tplText, model, src, tgt) {
+    setProcessing(true, `migrating ${name}...`);
+    try {
+      const result = await callOllama(model, buildPrompt(showRunText, tplText, src, tgt));
+      showOutput(result);
+      toast('done', 'success');
+    } catch (e) {
+      toast(`error: ${e.message}`, 'error');
+      showOutput(`! ERROR: ${e.message}\n! Check Ollama connection and try again.`);
+    } finally { setProcessing(false); }
+  }
+
+  async function migrateBatch(tplText, model, src, tgt) {
+    document.getElementById('queuePanel').style.display = 'block';
+    batchQueue = srcFiles.map(f => ({ name: f.name, file: f, status: 'pending', out: null }));
+    renderQueue(); setProcessing(true);
+
+    for (let i = 0; i < batchQueue.length; i++) {
+      batchQueue[i].status = 'processing';
+      document.getElementById('progressLabel').textContent = `${i+1}/${batchQueue.length} — ${batchQueue[i].name}`;
+      renderQueue();
+      try {
+        const txt = await readFile(batchQueue[i].file);
+        batchQueue[i].out = await callOllama(model, buildPrompt(txt, tplText, src, tgt));
+        batchQueue[i].status = 'done';
+        if (i === 0) showOutput(batchQueue[i].out);
+      } catch (e) {
+        batchQueue[i].status = 'error';
+        batchQueue[i].out = `! ERROR: ${e.message}`;
+      }
+      renderQueue();
+    }
+    setProcessing(false);
+    toast(`batch done — ${batchQueue.length} configs`, 'success');
+  }
+
+  // ── Output ────────────────────────────────────────────────────────────────
+  function showOutput(text) {
+    document.getElementById('outEmpty').style.display = 'none';
+    const el = document.getElementById('outContent');
+    el.style.display = 'block'; el.textContent = text.trim();
+  }
+
+  function copyOutput() {
+    const t = document.getElementById('outContent').textContent;
+    if (t) navigator.clipboard.writeText(t).then(() => toast('copied to clipboard', 'success'));
+    else toast('nothing to copy yet', 'error');
+  }
+
+  function downloadOutput() {
+    const t = document.getElementById('outContent').textContent;
+    if (!t) { toast('nothing to download yet', 'error'); return; }
+    const base = srcFiles[activeSrcIdx]?.name?.replace(/\.[^.]+$/, '') || 'migrated_config';
+    dl(t, base + '_migrated.cfg');
+  }
+
+  function setProcessing(on, label = 'processing...') {
+    document.getElementById('runBtn').disabled = on;
+    document.getElementById('progressWrap').classList.toggle('visible', on);
+    if (on) document.getElementById('progressLabel').textContent = label;
+  }
+
+  // ── Batch queue ───────────────────────────────────────────────────────────
+  function renderQueue() {
+    const icons = { pending: '○', processing: '◌', done: '●', error: '✕' };
+    document.getElementById('queueList').innerHTML = batchQueue.map((item, i) => `
+      <div class="q-item ${item.status}">
+        <span>${icons[item.status]}</span>
+        <span class="q-name">${item.name}</span>
+        <span style="color:var(--border);font-size:10px">${item.status}</span>
+        ${item.status === 'done' ? `<span class="q-dl" onclick="dlItem(${i})">save</span>` : ''}
+      </div>`).join('');
+  }
+
+  function dlItem(i) {
+    const it = batchQueue[i];
+    if (it.out) dl(it.out, it.name.replace(/\.[^.]+$/, '') + '_migrated.cfg');
+  }
+
+  function clearQueue() { batchQueue = []; document.getElementById('queuePanel').style.display = 'none'; }
+
+  function updateBatchHint() {
+    const h = document.getElementById('batchHint');
+    h.textContent = srcFiles.length > 1 ? `${srcFiles.length} files queued — will run as batch` : '';
+  }
+
+  // ── Utils ─────────────────────────────────────────────────────────────────
+  function dl(content, filename) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([content], { type: 'text/plain' }));
+    a.download = filename; a.click();
+  }
+
+  function toast(msg, type = '') {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.className = `toast ${type} show`;
+    setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  // Template pane: clicking dropzone after file loaded should re-show textarea
+  document.getElementById('tplText').addEventListener('input', () => {
+    if (document.getElementById('tplText').value) {
+      document.getElementById('tplDropzone').style.display = 'none';
+      document.getElementById('tplText').style.display = 'block';
+    }
+  });
+
+  // Show tpl textarea when user clicks dropzone area if already has content
+  document.getElementById('tplDropzone').addEventListener('click', () => {
+    const ta = document.getElementById('tplText');
+    if (!ta.value) {
+      document.getElementById('tplFileInput').click();
+    } else {
+      document.getElementById('tplDropzone').style.display = 'none';
+      ta.style.display = 'block';
+    }
+  });
+
+  window.addEventListener('load', () => setTimeout(testConnection, 400));
+</script>
+</body>
+</html>
