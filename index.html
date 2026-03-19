@@ -6,6 +6,7 @@
 <title>Swap Box</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
 <style>
+  /* global variables */
     :root {
     --bg:       #111827;
     --surface:  #1a2333;
@@ -35,7 +36,7 @@
     gap: 14px;
   }
 
-  /* ── Header ── */
+  /* header */
   header {
     display: flex;
     align-items: baseline;
@@ -59,7 +60,7 @@
   #statusText.online  { color: var(--success); }
   #statusText.offline { color: var(--warn); }
 
-  /* ── Top config bar ── */
+  /* configs*/
   .config-bar {
     display: flex;
     gap: 10px;
@@ -88,7 +89,7 @@
   input:focus, select:focus { border-color: var(--accent); }
   select option { background: var(--surface2); }
 
-  /* ── Buttons ── */
+  /* button */
   button {
     font-family: 'JetBrains Mono', monospace;
     cursor: pointer;
@@ -120,7 +121,7 @@
   .btn-run:hover { background: #6ab4ff; }
   .btn-run:disabled { opacity: 0.4; cursor: not-allowed; }
 
-  /* ── Device row ── */
+  /* device selector */
   .device-row {
     display: flex;
     align-items: flex-end;
@@ -131,7 +132,7 @@
 
   .device-row .field { flex: 1; min-width: 160px; }
 
-  /* ── Three panes ── */
+  /* input and output */
   .panes {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
@@ -173,7 +174,7 @@
   .pane.tpl  { border-left: 2px solid #3a5f8a; }
   .pane.out  { border-left: 2px solid #2a7a52; }
 
-  /* ── Drop zone ── */
+  /* drop zones */
   .dropzone {
     flex: 1;
     display: flex;
@@ -197,7 +198,7 @@
 
   .dz-sub { font-size: 11px; color: var(--border); }
 
-  /* ── File list ── */
+  /* listed files */
   .file-list {
     padding: 5px;
     display: flex;
@@ -228,7 +229,7 @@
   .frm { color: var(--border); }
   .frm:hover { color: var(--warn); }
 
-  /* ── Code areas ── */
+  /* text areas */
   textarea {
     flex: 1;
     font-family: 'JetBrains Mono', monospace;
@@ -276,18 +277,7 @@
     background: var(--code-bg);
   }
 
-  /* ── Hint strip under template ── */
-  .tpl-hint {
-    padding: 6px 10px;
-    border-top: 1px solid var(--border);
-    font-size: 10px;
-    color: var(--muted);
-    line-height: 1.6;
-    background: var(--surface2);
-    flex-shrink: 0;
-  }
-
-  /* ── Progress ── */
+  /* waiting bar */
   .progress-wrap { display: none; flex-direction: column; gap: 5px; flex-shrink: 0; }
   .progress-wrap.visible { display: flex; }
   .progress-track { height: 2px; background: var(--border); border-radius: 1px; overflow: hidden; }
@@ -300,7 +290,7 @@
   @keyframes slide { 0% { transform: translateX(-200%); } 100% { transform: translateX(450%); } }
   .progress-label { font-size: 11px; color: var(--muted); }
 
-  /* ── Batch queue ── */
+  /*queue*/
   .queue-wrap {
     border: 1px solid var(--border);
     border-radius: 2px;
@@ -344,7 +334,7 @@
   .q-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .q-dl { color: var(--accent); cursor: pointer; text-decoration: underline; font-size: 10px; }
 
-  /* ── Bottom action row ── */
+  /* bottom row */
   .action-row {
     display: flex;
     gap: 10px;
@@ -377,7 +367,7 @@
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
   input[type="file"] { display: none; }
-
+  /* Bradys Iconic footer */
   footer { text-align: center; padding: 16px; font-family: var(--mono); font-size: 0.72rem; color: var(--text-dim); letter-spacing: 0.08em; border-top: 1px solid var(--border); margin-top: 8px;
   }
 </style>
@@ -576,70 +566,57 @@
       cisco_9200: 'Cisco Catalyst 9200',   cisco_9500: 'Cisco Catalyst 9500',
     };
 
-    return `You are a network engineer. You are migrating a device config from a ${dn[srcDevice]||srcDevice} to a ${dn[tgtDevice]||tgtDevice}.
-
-You have two inputs:
-1. SOURCE — a "show running-config" from the OLD device
-2. TEMPLATE — the base config for the NEW device, which already has all policy and structural config correct
-
-Your ONLY job is to extract the following site-specific fields from SOURCE and insert them into the TEMPLATE.
-Do not change anything else.
-
---- FIELD 1: hostname ---
-Extract the "hostname <n>" line from SOURCE.
-Replace the "hostname" line in the TEMPLATE with this value.
-
---- FIELD 2: VLANs ---
-Extract ALL vlan definitions from SOURCE (every "vlan <id>" block and its "name <n>" line).
-Remove the existing vlan definition blocks from the TEMPLATE entirely.
-Insert the SOURCE vlans in their place, using the same formatting style (one "!" between each vlan block).
-
---- FIELD 3: management SVI + ip default-gateway ---
-Identify the management SVI from SOURCE: the "interface Vlan<X>" block that has an "ip address" configured.
-Step A — SVI: In the TEMPLATE, replace the existing management "interface Vlan<X>" block
-  with the one from SOURCE. Keep the exact Vlan number and IP from SOURCE.
-  The "interface Vlan1 / no ip address / shutdown" block must remain untouched.
-Step B — gateway:
-  If SOURCE has an explicit "ip default-gateway" line, use that value.
-  Otherwise take the SVI IP and replace the last octet with .1 to derive the gateway.
-  Replace the "ip default-gateway" line in the TEMPLATE with this derived value.
-
---- FIELD 4: banner Host/Site/Location/Model lines ---
-The WARNING box text in the TEMPLATE must remain completely untouched.
-From the SOURCE banner, extract ONLY the site identification lines at the bottom of the banner (after the warning box):
-  Host: <value>
-  Site: <value>
-  Location: <value>   (include only if this line exists in SOURCE — omit if absent)
-  Model: <value>
-Replace only those matching lines at the bottom of the TEMPLATE banner. Do not alter the warning box text.
-
---- FIELD 5: TACACS server keys ---
-For each "tacacs server" block in SOURCE (ACS3, ACS4, etc.):
-  - If the key is "key 7 <encrypted>", carry it over as-is: "key 7 <encrypted>"
-  - If the key is plaintext "key <value>", carry it over as: "key <value>"
-Find the matching named server blocks in the TEMPLATE and replace only the key lines.
-Do not change the server IP addresses in the TEMPLATE.
-
---- FIELD 6: RSA crypto ---
-The TEMPLATE already has "crypto key generate rsa 2048" — leave it exactly as written.
-Do NOT copy any crypto pki trustpoint, crypto pki certificate chain, or certificate blob from SOURCE.
-
---- STRICT RULES ---
-- Do NOT change: interfaces, NTP, SNMP, ACLs, AAA, logging, line configs, spanning-tree, VTP, or any other config
-- Do NOT add or remove any lines outside of the six fields defined above
-- Output ONLY the final IOS configuration — no explanations, no markdown fences, no comments
-- The output must be ready to copy and paste directly into a switch terminal
-
-SOURCE show running-config:
-===
-${showRunText}
-===
-
-TEMPLATE:
-===
-${templateText}
-===`;
-  }
+    return `You are a Cisco network engineer. You will be given a SOURCE config and a TEMPLATE config. Copy the TEMPLATE exactly, but replace these 6 things using values from the SOURCE:
+ 
+            1. Replace the hostname line with the hostname from SOURCE.
+            
+            2. Replace all vlan definition blocks with the vlan definitions from SOURCE. Keep the same formatting.
+            
+            3. Replace the management SVI interface block (the interface VlanX that has an ip address) with the one from SOURCE. Keep Vlan1 shutdown block untouched. Replace the ip default-gateway line with the gateway from SOURCE, or if there is no gateway line derive it by changing the last octet of the SVI IP to .1.
+            
+            4. In the banner, replace only the Host, Site, Location, and Model lines at the bottom with the values from SOURCE. Do not touch the WARNING box text. The banner must look exactly like this structure:
+            
+            banner login ^C
+            |===========================================================|
+            |                                                           |
+            |  W  A  R  N  I  N  G  ! !  !                              |
+            |                                                           |
+            |  This system is for the use of authorized users only.     |
+            |  Usage of this system may be monitored and logged by the  |
+            |  administrator.                                           |
+            |                                                           |
+            |  Anyone using this system expressly consents to such      |
+            |  monitoring and is advised that if such monitoring        |
+            |  reveals possible evidence of criminal act, the           |
+            |  administrator/s may provide the evidence to the          |
+            |  concerned authorities.                                   |
+            |                                                           |
+            |===========================================================|
+            
+            Host: <value from SOURCE>
+            Site: <value from SOURCE>
+            Location: <value from SOURCE — omit this line if not present in SOURCE>
+            Model: <value from SOURCE>
+            
+            
+            ^C
+            
+            5. In each tacacs server block, replace only the key line with the key from SOURCE. Do not touch the server addresses.
+            
+            6. Leave the crypto key generate rsa 2048 line exactly as it is in the TEMPLATE. Do not copy any crypto pki or certificate data from SOURCE.
+            
+            Output the completed config and nothing else. No explanations. No markdown. No comments. No preamble. The very first character of your response must be the first character of the IOS config.
+            
+            SOURCE:
+            ===
+            ${showRunText}
+            ===
+            
+            TEMPLATE:
+            ===
+            ${templateText}
+            ===`;
+      }
 
   // ── Source file handling ──────────────────────────────────────────────────
   function handleSrcFiles(e) { addSrcFiles([...e.target.files]); }
