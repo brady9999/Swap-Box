@@ -509,14 +509,14 @@
 
 <div class="toast" id="toast"></div>
 <script>
-  // ── State ─────────────────────────────────────────────────────────────────
+  // States
   let srcFiles = [];
   let activeSrcIdx = null;
   let showingSrcManual = false;
   let showingTplManual = false;
   let batchQueue = [];
 
-  // ── Ollama ────────────────────────────────────────────────────────────────
+  // Ollama
   function getBase() {
     return `${document.getElementById('ollamaHost').value.replace(/\/$/,'')}:${document.getElementById('ollamaPort').value}`;
   }
@@ -556,7 +556,7 @@
     return (await res.json()).response || '';
   }
 
-  // ── Prompt builder ────────────────────────────────────────────────────────
+  // Prompt Builder
   function buildPrompt(showRunText, templateText, srcDevice, tgtDevice) {
     const dn = {
       cisco_2960: 'Cisco Catalyst 2960', cisco_2960x: 'Cisco Catalyst 2960X',
@@ -618,7 +618,7 @@
             ===`;
       }
 
-  // ── Source file handling ──────────────────────────────────────────────────
+  // Source file handling 
   function handleSrcFiles(e) { addSrcFiles([...e.target.files]); }
   function handleSrcDrop(e) {
     e.preventDefault();
@@ -678,7 +678,7 @@
     dz.style.display = showingSrcManual ? 'none'  : (!srcFiles.length ? 'flex' : 'none');
   }
 
-  // ── Template file handling ─────────────────────────────────────────────────
+  // Template file handling
   function handleTplFile(e) { loadTplFile(e.target.files[0]); }
   function handleTplDrop(e) {
     e.preventDefault();
@@ -696,18 +696,18 @@
     r.readAsText(f);
   }
 
-  // ── Shared drag handlers ──────────────────────────────────────────────────
+  // Shared drag handlers
   function handleDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
   function handleDragLeave(e, id) { document.getElementById(id).classList.remove('drag-over'); }
 
-  // ── Read file util ────────────────────────────────────────────────────────
+  // Read file util
   function readFile(f) {
     return new Promise((res, rej) => {
       const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsText(f);
     });
   }
 
-  // ── Migration runner ──────────────────────────────────────────────────────
+  // Migration Runner
   async function runMigration() {
     const model = document.getElementById('modelSelect').value;
     if (!model) { toast('select a model first', 'error'); return; }
@@ -767,7 +767,7 @@
     toast(`batch done — ${batchQueue.length} configs`, 'success');
   }
 
-  // ── Output ────────────────────────────────────────────────────────────────
+  // Output
   function showOutput(text) {
     document.getElementById('outEmpty').style.display = 'none';
     const el = document.getElementById('outContent');
@@ -793,7 +793,7 @@
     if (on) document.getElementById('progressLabel').textContent = label;
   }
 
-  // ── Batch queue ───────────────────────────────────────────────────────────
+  //  Batch queue 
   function renderQueue() {
     const icons = { pending: '○', processing: '◌', done: '●', error: '✕' };
     document.getElementById('queueList').innerHTML = batchQueue.map((item, i) => `
@@ -817,7 +817,7 @@
     h.textContent = srcFiles.length > 1 ? `${srcFiles.length} files queued — will run as batch` : '';
   }
 
-  // ── Utils ─────────────────────────────────────────────────────────────────
+  // Utils 
   function dl(content, filename) {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([content], { type: 'text/plain' }));
